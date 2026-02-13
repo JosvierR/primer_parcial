@@ -1,0 +1,32 @@
+name: CI and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      SURGE_DOMAIN: ${{ secrets.SURGE_DOMAIN }}
+      SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to Surge
+        run: npx surge ./dist "$SURGE_DOMAIN" --token "$SURGE_TOKEN"
