@@ -33,7 +33,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: ci
-    if: github.ref == 'refs/heads/main' && secrets.SURGE_DOMAIN != '' && secrets.SURGE_TOKEN != ''
+    if: github.ref == 'refs/heads/main'
     env:
       SURGE_DOMAIN: ${{ secrets.SURGE_DOMAIN }}
       SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
@@ -54,5 +54,17 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Check deployment secrets
+        id: precheck
+        run: |
+          if [[ -n "$SURGE_DOMAIN" && -n "$SURGE_TOKEN" ]]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Deployment secrets found. Continuing to deploy."
+          else
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping deploy because SURGE_DOMAIN or SURGE_TOKEN is empty."
+          fi
+
       - name: Deploy to Surge
+        if: steps.precheck.outputs.should_deploy == 'true'
         run: npx surge ./dist "$SURGE_DOMAIN" --token "$SURGE_TOKEN"
